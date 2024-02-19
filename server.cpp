@@ -69,7 +69,7 @@ void Server::start_server() {
                 break;
             }
 
-        } while(bytes_recv > 0 && strcmp(req.connection_type, "close") != 0);
+        } while(bytes_recv > 0 && req.connection_type != NULL && strcmp(req.connection_type, "close") != 0);
 
         fprintf(stdout, "===--- Server ending connection with %s:%d\n\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
         close(client_fd);
@@ -87,6 +87,7 @@ http_req_t Server::parse_req(char* client_buff) {
     req.resource_path = NULL;
     req.content_length = NULL;
     req.content_body_ptr = body_ptr;
+    req.connection_type = NULL;
 
     char* req_type = strtok(client_buff, " \n");
     char* URL = strtok(NULL, " \n");
@@ -104,7 +105,7 @@ http_req_t Server::parse_req(char* client_buff) {
     else if (strcmp(req_type, "POST") == 0) {
         //Get the connection type (i.e close or keep alive)
         char* content_length = strtok(NULL, " \n");
-        while (strcmp(content_length, "Content-Length:") != 0) {
+        while (content_length != NULL && strcmp(content_length, "Content-Length:") != 0) {
             content_length = strtok(NULL, " \n");
         }
         content_length = strtok(NULL, " \n");
@@ -112,7 +113,7 @@ http_req_t Server::parse_req(char* client_buff) {
 
     //Get the connection type (i.e close or keep alive)
     char* connection_type = strtok(NULL, " \n");
-    while (strcmp(connection_type, "Connection:") != 0) {
+    while (connection_type != NULL && strcmp(connection_type, "Connection:") != 0) {
         connection_type = strtok(NULL, " \n");
     }
     connection_type = strtok(NULL, " \n");
