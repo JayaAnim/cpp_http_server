@@ -1,0 +1,77 @@
+<HTML>
+<HEAD>
+    <TITLE>TEST TEXT</TITLE>
+    <style>
+      body {
+        background-color: #99cc99;
+        color: #000000;
+        font-family: Arial, sans-serif;
+      }
+      
+      #spinner {
+        display: none;
+        border: 4px solid #f3f3f3; 
+        border-top: 4px solid #3498db; 
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        margin-top: -15px; 
+        margin-left: -15px; 
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
+</HEAD>
+<BODY BGCOLOR="#99cc99" TEXT="#000000" LINK="#2020ff" VLINK="#4040cc">
+
+
+<P>
+TEST....
+<P>
+
+<H3> The server has successully started and is sending you this page. </H3>
+
+<P>
+IMAGE LINK: If the server can successfully find and send you the image, it will show up in the subsequent page. <A HREF="testPresence.html">Click on this link for an image. </A>. 
+
+<P>
+NONEXISTANT LINK <A HREF="fake.html">click here to test the non-existent link </A>.
+
+<form id="requestForm">
+  <label for="requestData">Enter data:</label><br>
+  <input type="text" id="requestData" name="requestData"><br>
+  <button type="submit">Send Request</button>
+</form>
+
+<div id="spinner"></div>
+
+<script>
+  document.getElementById("requestForm").addEventListener("submit", function(event) {
+    event.preventDefault();
+    var requestData = document.getElementById("requestData").value;
+    var spinner = document.getElementById("spinner");
+    
+    spinner.style.display = "block";
+
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", "http://localhost:8080", true);
+    xhr.setRequestHeader("Content-Type", "text/plain");
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState === 4 && xhr.status === 200) {
+        spinner.style.display = "none";
+        alert("Response received: " + xhr.responseText);
+      }
+    };
+    xhr.send(requestData);
+  });
+</script>
+
+</BODY>
+</HTML>
