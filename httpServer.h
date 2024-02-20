@@ -8,9 +8,11 @@
 #include <arpa/inet.h>
 #include <string.h>
 
+//Port for server to listen on and buffer size of incoming requests
 #define SERVER_PORT 60002
 #define SERVER_BUFF_SIZE 32000
 
+//Struct to parse incoming requests
 typedef struct http_req {
     char* req_type;
     char* URL;
@@ -23,11 +25,12 @@ typedef struct http_req {
 
 class Server {
 private:
+    //Address, file descriptors (server and client) and address length, for server configurations
     int server_fd, client_fd;
     struct sockaddr_in addr;
     int addr_len;
 public:
-    Server();
+    Server(); /* configures server, will halt program if any configurations (listen and bind) fail, as they will prevent the server from working. So far, has only thrown issues if the port is busy */
     void start_server(); /* starts server by acceping one client connection at a time */
     http_req_t parse_req(char*); /* parses request buffer into http_req_t */
     bool handle_req(int, http_req_t*); /* routes individual request and sends appropriate response, returns true if successful */
