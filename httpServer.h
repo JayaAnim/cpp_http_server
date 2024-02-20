@@ -33,6 +33,8 @@ public:
     bool handle_req(int, http_req_t*); /* routes individual request and sends appropriate response, returns true if successful */
     bool _send_file_res(int, const char*, const char*); /* sends file response and returns true if successful */
     bool _send_text_res(int, const char*); /* sends text response with the content res_text and returns true if successful */
+    bool _not_found(int); /* sends 404 not found to client and returns true if successful */
+    bool _intern_err(int client_fd); /* sends 500 internal server error to client and returns true if successful (server error does not mean the server will crash, I have never encountered it, it is just incase a header is malformed and doesn't parse properly) */
     const char* _get_ft(const char*); /* returns content-header type for file */
     ~Server();    
 };

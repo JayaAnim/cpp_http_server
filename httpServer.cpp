@@ -25,17 +25,20 @@ Server::Server() {
 }
 
 void Server::start_server() {
+    fprintf(stdout, "\n\n+++++++++++++++++++++++++----- Server Started At IP %s And Port %d -----+++++++++++++++++++++++++\n\n", inet_ntoa(addr.sin_addr), SERVER_PORT);
+
     while(1) {
-        fprintf(stdout, "\n====================----- Waiting For New Connection -----====================\n\n");
+        fprintf(stdout, "====================----- Waiting For New Connection -----====================\n\n");
 
         if ((client_fd = accept(server_fd, (struct sockaddr *)&addr, (socklen_t*)&addr_len)) < 0) {
             //Skip to next client
-            fprintf(stderr, "Server failed to accept incoming connection from %s:%d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
+            fprintf(stderr, "!!!Server failed to accept incoming connection, moving to next client in queue\n\n");
             close(client_fd);
             continue;
         }
-            
-        fprintf(stdout, "===--- Server accepted incoming connection from %s:%d\n\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
+        else {
+            fprintf(stdout, "===--- Server accepted incoming connection\n\n");
+        }
 
         int bytes_recv;
         char client_buff[SERVER_BUFF_SIZE];
@@ -47,9 +50,11 @@ void Server::start_server() {
 
             bytes_recv = read(client_fd, client_buff, SERVER_BUFF_SIZE);
 
+            fprintf(stdout, "\n====================----- Server received new request -----====================\n\n");
+
             //If bytes received are invalid, end connection
             if (bytes_recv < 0) {
-                fprintf(stdout, "Server failed to read bytes from %s:%d\n\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
+                fprintf(stdout, "!!!Server failed to read bytes, moving to next client in queue\n\n");
                 break;
             }
 
@@ -59,27 +64,17 @@ void Server::start_server() {
             
             req = parse_req(client_buff);
 
-            if (strcmp(req.req_type, "GET") == 0) {
-                fprintf(stdout, "\n\n--- Client request is a GET request to %s\n\n", req.URL); 
-
-            }
-            else if (strcmp(req.req_type, "POST") == 0) {
-                fprintf(stdout, "\n\n--- Client request is a POST request with the body \n{\n%s\n\n}\n\n", req.content_body_ptr); 
-            }
-
-            
-            fprintf(stdout, "--- Sending response to client\n\n");
+            fprintf(stdout, "===--- Sending response to client\n\n");
 
             if (handle_req(client_fd, &req)) {
-                fprintf(stdout, "--- Response sent successfully to client\n\n");
+                fprintf(stdout, "===--- Response sent successfully to client\n\n");
             }
             else {
                 break;
             }
+        } while(bytes_recv > 0);
 
-        } while(bytes_recv > 0 && req.connection_type != NULL && strcmp(req.connection_type, "close") != 0);
-
-        fprintf(stdout, "===--- Server ending connection with %s:%d\n\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
+        fprintf(stdout, "===--- Server ending connection with client");
         close(client_fd);
 
     }
@@ -88,24 +83,48 @@ void Server::start_server() {
 }
 
 http_req_t Server::parse_req(char* client_buff) {
-    char* body_ptr = strrchr(client_buff, '\r');
-
+    //Set everything to NULL for error handling abilities
     http_req_t req;
-    req.resource_type = NULL;
+    req.req_type = NULL;
+    req.URL = NULL;
     req.resource_path = NULL;
-    req.content_length = NULL;
-    req.content_body_ptr = body_ptr;
+    req.resource_type = NULL;
     req.connection_type = NULL;
+    req.content_length = NULL;
+    req.content_body_ptr = NULL;
 
+    if (client_buff == NULL) {
+        return req;
+    }
+
+    //Set ptr to start of req body
+    char* body_ptr = strrchr(client_buff, '\r');
+    if (body_ptr == NULL) {
+        return req;
+    }
+    req.content_body_ptr = body_ptr;
+
+    //Get req_type
     char* req_type = strtok(client_buff, " \n");
+    if (req_type == NULL) {
+        return req;
+    }
+    req.req_type = req_type;
+
     char* URL = strtok(NULL, " \n");
+    if (URL == NULL) {
+        return req;
+    }
+    req.URL = URL;
 
     //If request type is GET, parse the resource type and resource path
     if (strcmp(req_type, "GET") == 0) {
+
         //Get the resource type (filetype)
         req.resource_type = _get_ft(URL);
+
         //If resource type is not NULL (it is a file) remove starting / from the path
-        if (req.resource_type != NULL) {
+        if (req.resource_type != NULL && strlen(req.URL) > 1) {
             req.resource_path = &URL[1];
         }
     }
@@ -116,7 +135,12 @@ http_req_t Server::parse_req(char* client_buff) {
         while (content_length != NULL && strcmp(content_length, "Content-Length:") != 0) {
             content_length = strtok(NULL, " \n");
         }
+
         content_length = strtok(NULL, " \n");
+        if (content_length == NULL) {
+            return req;
+        }
+        req.content_length = content_length;
     }
 
     //Get the connection type (i.e close or keep alive)
@@ -124,11 +148,13 @@ http_req_t Server::parse_req(char* client_buff) {
     while (connection_type != NULL && strcmp(connection_type, "Connection:") != 0) {
         connection_type = strtok(NULL, " \n");
     }
-    connection_type = strtok(NULL, " \n");
 
-    req.URL = URL;
-    req.req_type = req_type;
+    connection_type = strtok(NULL, " \n");
+    if (connection_type == NULL) {
+        return req;
+    }
     req.connection_type = connection_type;
+
     return req;
 }
 
@@ -140,18 +166,18 @@ bool Server::handle_req(int client_fd, http_req_t* req) {
             return _send_file_res(client_fd, "index.html", "text/html");
         }
 
-        //If no direct match for url path, send resource_path to _send_file_res (if resource_path is NULL, the function will send a 404 page)
+        //If no direct match for url path, send resource_path to _send_file_res (if resource_path is NULL, the function will send a 404 message)
         else {
             return _send_file_res(client_fd, req->resource_path, req->resource_type);
         }
 
     }
+    //If request type is POST send back the body
     else if (strcmp(req->req_type, "POST") == 0) {
         return _send_text_res(client_fd, req->content_body_ptr);
     }
     else {
-        fprintf(stdout, "--- The URL %s does not match any resources, sending 404 response\n\n", req->URL);
-        return _send_file_res(client_fd, "404.html", "text/html");
+        return _not_found(client_fd);
     }
 }
 
@@ -159,44 +185,21 @@ bool Server::_send_file_res(int client_fd, const char* filepath, const char* fil
     FILE* file = NULL;
     unsigned long file_len;
     char* res;
-    char status_code[64];
-
-    //Purely for printing purposes
-    const char* prnt_filename = filepath;
 
     if (filepath != NULL) { 
         file = fopen(filepath, "rb");
     }
 
-    //If file not found, or filepath not provided, set file to 404.html, ensure filetype is text/html, and set status code to 404
+    //If file is not found or file is null throw a 404 error
     if (file == NULL) {
-        prnt_filename = "404.html";
-        fclose(file);
-
-        strcpy(status_code, "404 Not Found");
-        file = fopen("404.html", "rb");
-        filetype = "text/html";
+        return _not_found(client_fd);
     }
-    //If file is found, but is 404.html, set status code to 404, and ensure filetype is text/html
-    else if (strcmp(filepath, "404.html") == 0) {
-        prnt_filename = "404.html";
-        fclose(file);
-
-        strcpy(status_code, "404 Not Found");
-        filetype = "text/html";
-    }
-    //If file is found but filetype is not specified, assume error occurred and repeat steps from first if statement
+    //If file is found but filetype is not specified, assume error occurred and send 404 error
     else if (filetype == NULL) {
-        prnt_filename = "404.html";
+        //close file since it is not NULL
         fclose(file);
 
-        strcpy(status_code, "404 Not Found");
-        file = fopen("404.html", "rb");
-        filetype = "text/html";
-    }
-    //If file is found and filetype is specified set status code to 200 OK
-    else {
-        strcpy(status_code, "200 OK");
+        return _not_found(client_fd);
     }
 
     // Get the length of the file
@@ -212,10 +215,14 @@ bool Server::_send_file_res(int client_fd, const char* filepath, const char* fil
 
     fclose(file);
 
-    fprintf(stdout, "---The response Content-Length is %ld, the status code is %s, and the resource being sent is %s\n\n", file_len, status_code, prnt_filename);
-    dprintf(client_fd, "HTTP/1.1 %s\nContent-Length: %ld\nContent-Type: %s\n\n", status_code, file_len, filetype);
+    //Send header
+    dprintf(client_fd, "HTTP/1.1 200 OK\r\nContent-Type: %s\r\nContent-Length: %ld\r\n\r\n", filetype, file_len);
 
+    //Write body
     unsigned long bytes_sent = write(client_fd, res, file_len);
+
+    //Print to console what was just sent
+    fprintf(stdout, "===---The response Content-Length is %ld, the status code is 200 OK, and the resource being sent is %s\n\n", file_len, filepath);
 
     free(res);
 
@@ -223,15 +230,53 @@ bool Server::_send_file_res(int client_fd, const char* filepath, const char* fil
 }
 
 bool Server::_send_text_res(int client_fd, const char* res_text) {
-    const char* status_code = "200 OK";
-    unsigned long text_len = strlen(res_text);
+    // response text cannot be NULL, if it is send 500 internal server error to client
+    if (res_text == NULL) {
+        return _intern_err(client_fd);
+    }
 
-    fprintf(stdout, "---The response status code is %s, and the text being sent is %s\n\n", status_code, res_text);
-    dprintf(client_fd, "HTTP/1.1 %s\nContent-Length: %ld\nContent-Type: text/plain\n\n", status_code, text_len);
+    //Send header
+    dprintf(client_fd, "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %ld\r\n\r\n", strlen(res_text));
 
-    unsigned long bytes_sent = write(client_fd, res_text, text_len);
+    //Send body
+    unsigned long bytes_sent = write(client_fd, res_text, strlen(res_text));
 
-    return bytes_sent == text_len;
+    //Print to console what was just sent
+    fprintf(stdout, "===---The response status code is 200 OK, and the text being sent is %s\n\n", res_text);
+
+    return (bytes_sent == strlen(res_text));
+}
+
+bool Server::_not_found(int client_fd) {
+
+    const char* err_msg = "Not Found\n";
+
+    //Send header
+    dprintf(client_fd, "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\nContent-Length: %ld\r\n\r\n", strlen(err_msg));
+
+    //Send body
+    unsigned long bytes_sent = write(client_fd, err_msg, strlen(err_msg));
+
+    //Print to console that 404 Not Found was just sent
+    fprintf(stdout, "===--The reponse status code is 404 Not Found\n\n");
+
+    return (bytes_sent == strlen(err_msg));
+}
+
+bool Server::_intern_err(int client_fd) {
+    
+    const char* err_msg = "500 Internal Error\n";
+
+    //Send header
+    dprintf(client_fd, "HTTP/1.1 500 Internal Server Error\r\nContent-Type: text/plain\r\nContent-Length: %ld\r\n\r\n", strlen(err_msg));
+
+    //Send body
+    unsigned long bytes_sent = write(client_fd, err_msg, strlen(err_msg));
+
+    //Print to console that 500 Internal Server Error was just sent
+    fprintf(stdout, "===--The response status code is 500 Internal Server Error\n\n");
+
+    return (bytes_sent == strlen(err_msg));
 }
 
 const char* Server::_get_ft(const char* filepath) {

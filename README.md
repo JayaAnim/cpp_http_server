@@ -7,7 +7,7 @@
 To run this program navigate to base directory and run ```make```. This will the executable file ```server```. To execute this file, run the command ```./server```, this will run the program on the port ```600002```.
 
 > [!IMPORTANT]
-> Ensure that the port is available. If the port is not available you can change the port used by changing the line ```#define SERVER_PORT 60002``` (line number 11) in the file ```server.h```  
+> Ensure that the port is available. If the port is not available you can change the port used by changing the line ```#define SERVER_PORT 60002``` (line number 11) in the file ```server.h``` as well as by changing the ```http://localhost:<port>``` line inside of index.html  
 
 ## Functionality
 The server will allow the user to navigate to the url paths ```/```, ```/testPresence.html```, and ```fake.html``` from the link ```http://localhost:60002``` in any modern web browser. It will also allow the user to type any input into a text field on the home screen, and upon hitting submit a spinner will spin at the center of the screen until the web page receives a response. Once the web page has received a response it will show an ```alert```, which repeats the input (http body) the server received from the client.
@@ -31,7 +31,7 @@ This server is built to be extra extendable. This means that to add another path
 Another added functionality is that anytime a GET request to a path (for example - ```/dir1/dir2/file.html```) is made, if the URL path is a valid relative path to an existing file inside the project1 directory, that file will be served to the user. This means that paths such as ```/img.png``` are valid and will display the image only. The server handles the headers automatically for all file types.
 
 ## Error-Handling
-If a user navigates to an invalid path the server will respond with a not found page (404.html), which will notify the user that the path is invalid. This page will also have a link to easily navigate back to the home page (/).
+If a user navigates to an invalid path the server will respond with a 404 Not Found response, which will notify the user that the path is invalid.
 
 The only time the server will halt itself completely is on during start-up if the function ```bind```, ```listen``` or ```socket``` (for the server file descriptor) fail. This is because the server needs a clean start up to avoid errors, if a client connection gives errors the server will not shut down, it will simply close the connection and wait for the next client.
 
