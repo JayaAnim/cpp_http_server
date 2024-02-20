@@ -54,11 +54,20 @@ void Server::start_server() {
                 break;
             }
 
-            fprintf(stdout, "--- Client request is\n\n"); 
+            fprintf(stdout, "===--- Client request is\n\n"); 
             //Print the client request
             fprintf(stdout, "%s\n", client_buff);
             
             req = parse_req(client_buff);
+
+            if (strcmp(req.req_type, "GET") == 0) {
+                fprintf(stdout, "\n\n--- Client request is a GET request to %s\n\n", req.URL); 
+
+            }
+            else if (strcmp(req.req_type, "POST") == 0) {
+                fprintf(stdout, "\n\n--- Client request is a POST request with the body \n{\n%s\n\n}\n\n", req.content_body_ptr); 
+            }
+
             
             fprintf(stdout, "--- Sending response to client\n\n");
 
