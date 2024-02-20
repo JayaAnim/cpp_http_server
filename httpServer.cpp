@@ -1,6 +1,4 @@
-#include "server.h"
-
-const char* NOT_FOUND_MSG = "HTTP/1.1 404 Not Found\nContent-Type: text/html\n\n<!DOCTYPE html>\n<html>\n<head>\n<title>404 Not Found</title>\n</head>\n<body>\n<h1>404 Not Found</h1>\n<p>The requested resource was not found.</p>\n</body>\n</html>";
+#include "httpServer.h"
 
 Server::Server() {
     addr.sin_family = AF_INET;             
@@ -163,12 +161,16 @@ bool Server::_send_file_res(int client_fd, const char* filepath, const char* fil
     char* res;
     char status_code[64];
 
+    //Purely for printing purposes
+    const char* prnt_filename = filepath;
+
     if (filepath != NULL) { 
         file = fopen(filepath, "rb");
     }
 
     //If file not found, or filepath not provided, set file to 404.html, ensure filetype is text/html, and set status code to 404
     if (file == NULL) {
+        prnt_filename = "404.html";
         fclose(file);
 
         strcpy(status_code, "404 Not Found");
@@ -177,6 +179,7 @@ bool Server::_send_file_res(int client_fd, const char* filepath, const char* fil
     }
     //If file is found, but is 404.html, set status code to 404, and ensure filetype is text/html
     else if (strcmp(filepath, "404.html") == 0) {
+        prnt_filename = "404.html";
         fclose(file);
 
         strcpy(status_code, "404 Not Found");
@@ -184,6 +187,7 @@ bool Server::_send_file_res(int client_fd, const char* filepath, const char* fil
     }
     //If file is found but filetype is not specified, assume error occurred and repeat steps from first if statement
     else if (filetype == NULL) {
+        prnt_filename = "404.html";
         fclose(file);
 
         strcpy(status_code, "404 Not Found");
@@ -208,6 +212,7 @@ bool Server::_send_file_res(int client_fd, const char* filepath, const char* fil
 
     fclose(file);
 
+    fprintf(stdout, "---The response Content-Length is %ld, the status code is %s, and the resource being sent is %s\n\n", file_len, status_code, prnt_filename);
     dprintf(client_fd, "HTTP/1.1 %s\nContent-Length: %ld\nContent-Type: %s\n\n", status_code, file_len, filetype);
 
     unsigned long bytes_sent = write(client_fd, res, file_len);
@@ -221,6 +226,7 @@ bool Server::_send_text_res(int client_fd, const char* res_text) {
     const char* status_code = "200 OK";
     unsigned long text_len = strlen(res_text);
 
+    fprintf(stdout, "---The response status code is %s, and the text being sent is %s\n\n", status_code, res_text);
     dprintf(client_fd, "HTTP/1.1 %s\nContent-Length: %ld\nContent-Type: text/plain\n\n", status_code, text_len);
 
     unsigned long bytes_sent = write(client_fd, res_text, text_len);

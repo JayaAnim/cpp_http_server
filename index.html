@@ -61,7 +61,7 @@ NONEXISTANT LINK <A HREF="fake.html">click here to test the non-existent link </
     spinner.style.display = "block";
 
     var xhr = new XMLHttpRequest();
-    xhr.open("POST", "http://localhost:8080", true);
+    xhr.open("POST", "http://localhost:60002", true);
     xhr.setRequestHeader("Content-Type", "text/plain");
     xhr.onreadystatechange = function () {
       if (xhr.readyState === 4 && xhr.status === 200) {

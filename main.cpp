@@ -1,6 +1,5 @@
 // Server side C program to demonstrate HTTP Server programming
-#include <stdio.h>
-#include "server.h"
+#include "httpServer.h"
 
 
 int main()

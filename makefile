@@ -11,13 +11,13 @@ all: $(OBJDIR) ./server clean
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
 
-./server: $(OBJDIR)/main.o $(OBJDIR)/server.o  
+./server: $(OBJDIR)/main.o $(OBJDIR)/httpServer.o  
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
-$(OBJDIR)/main.o: main.cpp $(OBJDIR)/server.o
+$(OBJDIR)/main.o: main.cpp $(OBJDIR)/httpServer.o
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-$(OBJDIR)/server.o: server.cpp server.h
+$(OBJDIR)/httpServer.o: httpServer.cpp httpServer.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:

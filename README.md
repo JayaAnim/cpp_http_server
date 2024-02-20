@@ -19,6 +19,7 @@ Some of the things the server will print to the console while running are:
 - The type of request received
 - The path of the request or body of the request (depending on if the request is a GET or POST request)
 - When the server has started to send a response
+- Information about the response sent such as content-length, file path, response body etc (GET and POST display different information)
 - If the response sent was successful
 
 > [!NOTE]
@@ -32,7 +33,7 @@ Another added functionality is that anytime a GET request to a path (for example
 ## Error-Handling
 If a user navigates to an invalid path the server will respond with a not found page (404.html), which will notify the user that the path is invalid. This page will also have a link to easily navigate back to the home page (/).
 
-The only time the server will halt itself completely is on start up if the function ```bind```, ```listen``` or ```socket``` (for the server file descriptor) fail. This is because the server needs a clean start up to avoid errors, if a client connection gives errors the server will not shut down, it will simply close the connection and wait for the next client.
+The only time the server will halt itself completely is on during start-up if the function ```bind```, ```listen``` or ```socket``` (for the server file descriptor) fail. This is because the server needs a clean start up to avoid errors, if a client connection gives errors the server will not shut down, it will simply close the connection and wait for the next client.
 
 > [!NOTE]
 > The only error likely to be encountered is ```[ERROR] could not bind address for server: Address already in use```. This occurrs occassionally if the server was just ran and then re-ran again. This is intended and prevents the program from crashing.

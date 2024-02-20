@@ -1,5 +1,5 @@
-#ifndef SERVER_H
-#define SERVER_H
+#ifndef HTTPSERVER_H
+#define HTTPSERVER_H
 #include <stdio.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -8,7 +8,7 @@
 #include <arpa/inet.h>
 #include <string.h>
 
-#define SERVER_PORT 8080
+#define SERVER_PORT 60002
 #define SERVER_BUFF_SIZE 32000
 
 typedef struct http_req {
