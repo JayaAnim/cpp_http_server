@@ -31,9 +31,10 @@ void Server::start_server() {
         fprintf(stdout, "\n====================----- Waiting For New Connection -----====================\n\n");
 
         if ((client_fd = accept(server_fd, (struct sockaddr *)&addr, (socklen_t*)&addr_len)) < 0) {
+            //Skip to next client
             fprintf(stderr, "Server failed to accept incoming connection from %s:%d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
-            perror("[ERROR] could not accept client request");
-            exit(EXIT_FAILURE);
+            close(client_fd);
+            continue;
         }
             
         fprintf(stdout, "===--- Server accepted incoming connection from %s:%d\n\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
