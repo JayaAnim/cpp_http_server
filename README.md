@@ -45,21 +45,21 @@ The bonus has been complete and a description is available in the ```Functionali
 
 ### Home page (path /)
 
-![alt text](https://github.com/JayaAnim/cpp_http_server/tree/main/documentation_images/home_page.png)
+![image description](documentation_images/home_page.png)
 
 ### Descriptive server output (on terminal)
 
-![alt text](https://github.com/JayaAnim/cpp_http_server/tree/main/documentation_images/server_console_output.png)
+![image description](documentation_images/server_console_output.png)
 
 ### test presence page (path /testPresence.html)
 
-![alt text](https://github.com/JayaAnim/cpp_http_server/tree/main/documentation_images/test_presence_page.png)
+![image description](documentation_images/test_presence_page.png)
 
 ### fake page (path /fake.html)
 
-![alt text](https://github.com/JayaAnim/cpp_http_server/tree/main/documentation_images/fake_page.png)
+![image description](documentation_images/fake_page.png)
 
 ### bonus points 
 ***any text inputed into the homepage text box will be submitted to server when button is clicked, once the server responds, an alert with the server response, which is the same as the input, will display***
 
-![alt text](https://github.com/JayaAnim/cpp_http_server/tree/main/documentation_images/bonus_points_input.png)
+![image description](documentation_images/bonus_points_input.png)
