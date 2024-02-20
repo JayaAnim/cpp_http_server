@@ -1,3 +1,9 @@
+/*
+ * File defines Server class which is used to create http server which includes debugging output
+ * Authors: Chase Lamkin
+ * Written February 18th
+ * Course COP4635
+ */
 #ifndef HTTPSERVER_H
 #define HTTPSERVER_H
 #include <stdio.h>
