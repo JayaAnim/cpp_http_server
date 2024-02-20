@@ -53,7 +53,7 @@ void Server::start_server() {
             fprintf(stdout, "\n====================----- Server received new request -----====================\n\n");
 
             //If bytes received are invalid, end connection
-            if (bytes_recv < 0) {
+            if (bytes_recv <= 0) {
                 fprintf(stdout, "!!!Server failed to read bytes, moving to next client in queue\n\n");
                 break;
             }
@@ -159,6 +159,11 @@ http_req_t Server::parse_req(char* client_buff) {
 }
 
 bool Server::handle_req(int client_fd, http_req_t* req) {
+    if (req->req_type == NULL) {
+        fprintf(stdout, "!!!Attempted to respond to empty request object, moving onto next client in queue\n\n");
+        return false;
+    }
+
     //If request type is GET
     if (strcmp(req->req_type, "GET") == 0) {
 
