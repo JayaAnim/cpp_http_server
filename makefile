@@ -6,18 +6,30 @@ CXXFLAGS = -Wall -Wextra -g -std=c++11
 
 OBJDIR = obj
 
-all: $(OBJDIR) ./server clean
+all: $(OBJDIR) ./server ./client clean
 
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
 
-./server: $(OBJDIR)/main.o $(OBJDIR)/httpServer.o  
+./server: $(OBJDIR)/serverMain.o $(OBJDIR)/httpServer.o  $(OBJDIR)/globals.o  
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
-$(OBJDIR)/main.o: main.cpp $(OBJDIR)/httpServer.o
+./client: $(OBJDIR)/clientMain.o $(OBJDIR)/httpClient.o  $(OBJDIR)/globals.o  
+	$(CXX) $(CXXFLAGS) $^ -o $@
+
+$(OBJDIR)/serverMain.o: serverMain.cpp $(OBJDIR)/httpServer.o  $(OBJDIR)/globals.o
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-$(OBJDIR)/httpServer.o: httpServer.cpp httpServer.h
+$(OBJDIR)/clientMain.o: clientMain.cpp $(OBJDIR)/httpClient.o  $(OBJDIR)/globals.o
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(OBJDIR)/httpServer.o: httpServer.cpp httpServer.h $(OBJDIR)/globals.o
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(OBJDIR)/httpClient.o: httpClient.cpp httpClient.h $(OBJDIR)/globals.o
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(OBJDIR)/globals.o: globals.cpp globals.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:

@@ -24,6 +24,45 @@ Server::Server() {
     }
 }
 
+    
+Server::Server(char* addr_str, char* port_str) {
+    // Convert address and port strings to appropriate types
+    struct in_addr ip_addr;
+    if (inet_pton(AF_INET, addr_str, &ip_addr) <= 0) {
+        perror("[ERROR] invalid address");
+        exit(EXIT_FAILURE);
+    }
+
+    int i_port = atoi(port_str); // Convert port string to integer
+    if (i_port <= 0 || i_port > 65535) {
+        perror("[ERROR] invalid port");
+        exit(EXIT_FAILURE);
+    }
+
+    addr.sin_family = AF_INET;             
+    addr.sin_port = htons(i_port);        
+    addr.sin_addr = ip_addr;
+
+    addr_len = sizeof(addr);
+
+    memset(addr.sin_zero, '\0', sizeof(addr.sin_zero));
+
+    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
+    {
+        perror("[ERROR] could not create socket");
+        exit(EXIT_FAILURE);
+    }
+    if (bind(server_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+        perror("[ERROR] could not bind address for server");
+        exit(EXIT_FAILURE);
+    }
+    if (listen(server_fd, 10) < 0) {
+        perror("[ERROR] could not set server to passive mode (10 requests at a time)");
+        exit(EXIT_FAILURE);
+    }
+
+}
+
 void Server::start_server() {
     fprintf(stdout, "\n\n+++++++++++++++++++++++++----- Server Started At IP %s And Port %d -----+++++++++++++++++++++++++\n\n", inet_ntoa(addr.sin_addr), SERVER_PORT);
 
@@ -61,7 +100,7 @@ void Server::start_server() {
             fprintf(stdout, "===--- Client request is\n\n"); 
             //Print the client request
             fprintf(stdout, "%s\n", client_buff);
-            
+
             req = parse_req(client_buff);
 
             fprintf(stdout, "===--- Sending response to client\n\n");
@@ -72,9 +111,12 @@ void Server::start_server() {
             else {
                 break;
             }
-        } while(bytes_recv > 0);
 
-        fprintf(stdout, "===--- Server ending connection with client");
+            
+
+        } while(bytes_recv > 0 && strcmp(req.connection_type, "keep-alive") == 0);
+
+        fprintf(stdout, "===--- Server ending connection with client\n\n");
         close(client_fd);
 
     }
@@ -98,20 +140,21 @@ http_req_t Server::parse_req(char* client_buff) {
     }
 
     //Set ptr to start of req body
-    char* body_ptr = strrchr(client_buff, '\r');
+    char* body_ptr = strstr(client_buff, "\r\n\r\n");
     if (body_ptr == NULL) {
         return req;
     }
+    body_ptr += strlen("\r\n\r\n");
     req.content_body_ptr = body_ptr;
 
     //Get req_type
-    char* req_type = strtok(client_buff, " \n");
+    char* req_type = strtok(client_buff, " \r\n");
     if (req_type == NULL) {
         return req;
     }
     req.req_type = req_type;
 
-    char* URL = strtok(NULL, " \n");
+    char* URL = strtok(NULL, " \r\n");
     if (URL == NULL) {
         return req;
     }
@@ -121,7 +164,7 @@ http_req_t Server::parse_req(char* client_buff) {
     if (strcmp(req_type, "GET") == 0) {
 
         //Get the resource type (filetype)
-        req.resource_type = _get_ft(URL);
+        req.resource_type = get_ft(URL);
 
         //If resource type is not NULL (it is a file) remove starting / from the path
         if (req.resource_type != NULL && strlen(req.URL) > 1) {
@@ -131,12 +174,12 @@ http_req_t Server::parse_req(char* client_buff) {
     //If request is POST get the content-length
     else if (strcmp(req_type, "POST") == 0) {
         //Get the connection type (i.e close or keep alive)
-        char* content_length = strtok(NULL, " \n");
+        char* content_length = strtok(NULL, " \r\n");
         while (content_length != NULL && strcmp(content_length, "Content-Length:") != 0) {
-            content_length = strtok(NULL, " \n");
+            content_length = strtok(NULL, " \r\n");
         }
 
-        content_length = strtok(NULL, " \n");
+        content_length = strtok(NULL, " \r\n");
         if (content_length == NULL) {
             return req;
         }
@@ -144,12 +187,12 @@ http_req_t Server::parse_req(char* client_buff) {
     }
 
     //Get the connection type (i.e close or keep alive)
-    char* connection_type = strtok(NULL, " \n");
+    char* connection_type = strtok(NULL, " \r\n");
     while (connection_type != NULL && strcmp(connection_type, "Connection:") != 0) {
-        connection_type = strtok(NULL, " \n");
+        connection_type = strtok(NULL, " \r\n");
     }
 
-    connection_type = strtok(NULL, " \n");
+    connection_type = strtok(NULL, " \r\n");
     if (connection_type == NULL) {
         return req;
     }
@@ -227,7 +270,7 @@ bool Server::_send_file_res(int client_fd, const char* filepath, const char* fil
     unsigned long bytes_sent = write(client_fd, res, file_len);
 
     //Print to console what was just sent
-    fprintf(stdout, "===---The response Content-Length is %ld, the status code is 200 OK, and the resource being sent is %s\n\n", file_len, filepath);
+    fprintf(stdout, "===---Received a resource GET request. The response Content-Length is %ld, the status code is 200 OK, and the resource being sent is %s\n\n", file_len, filepath);
 
     free(res);
 
@@ -247,7 +290,7 @@ bool Server::_send_text_res(int client_fd, const char* res_text) {
     unsigned long bytes_sent = write(client_fd, res_text, strlen(res_text));
 
     //Print to console what was just sent
-    fprintf(stdout, "===---The response status code is 200 OK, and the text being sent is %s\n\n", res_text);
+    fprintf(stdout, "===---Received a text POST request. The response status code is 200 OK, and the text being sent is %s\n\n", res_text);
 
     return (bytes_sent == strlen(res_text));
 }
@@ -282,26 +325,6 @@ bool Server::_intern_err(int client_fd) {
     fprintf(stdout, "===--The response status code is 500 Internal Server Error\n\n");
 
     return (bytes_sent == strlen(err_msg));
-}
-
-const char* Server::_get_ft(const char* filepath) {
-    const char* ext = strrchr(filepath, '.');
-    if (ext != NULL) {
-        if (strcmp(ext, ".html") == 0) {
-            return "text/html";
-        } else if (strcmp(ext, ".txt") == 0) {
-            return "text/plain";
-        } else if (strcmp(ext, ".jpg") == 0 || strcmp(ext, ".jpeg") == 0) {
-            return "image/jpeg";
-        } else if (strcmp(ext, ".png") == 0) {
-            return "image/png";
-        } else if (strcmp(ext, ".gif") == 0) {
-            return "image/gif";
-        } else if (strcmp(ext, ".pdf") == 0) {
-            return "application/pdf";
-        }
-    }
-    return NULL;
 }
 
 Server::~Server() {
